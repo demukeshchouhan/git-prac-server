@@ -16,7 +16,6 @@ async function getContext({ req }) {
 }
 
 const PORT = 9000;
-
 const app = express();
 
 app.use(cors(), express.json(), authMiddleware);

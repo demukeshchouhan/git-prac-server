@@ -35,9 +35,30 @@ export const resolvers = {
       const { companyId } = user;
       return createJob({ companyId, title, description });
     },
-    deleteJob: (_root, { id }) => deleteJob(id),
-    updateJob: (_root, { input: { id, title, description } }) =>
-      updateJob({ id, title, description }),
+    deleteJob: async (_root, { id }, { user }) => {
+      if (!user) {
+        throw unauthorizedError("Missing authorization");
+      }
+      const job = await deleteJob(id, user.companyId);
+      if (!job) {
+        throw notFoundError(`No company found for this id ${id}`);
+      }
+      return job;
+    },
+    updateJob: async (
+      _root,
+      { input: { id, title, description } },
+      { user: { companyId } }
+    ) => {
+      if (!user) {
+        throw unauthorizedError("Missing authorization");
+      }
+      const job = await updateJob({ id, companyId, title, description });
+      if (!job) {
+        throw notFoundError(`No company found for this id ${id}`);
+      }
+      return job;
+    },
   },
   Job: {
     company: (job) => getCompany(job.companyId),
