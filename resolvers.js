@@ -33,7 +33,8 @@ export const resolvers = {
         throw unauthorizedError("Missing authorization");
       }
       const { companyId } = user;
-      return createJob({ companyId, title, description });
+      const job = createJob({ companyId, title, description });
+      return job;
     },
     deleteJob: async (_root, { id }, { user }) => {
       if (!user) {
