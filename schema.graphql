@@ -3,7 +3,7 @@
 This is a documentation comment
 """
 type Query {
-  jobs: [Job!]
+  jobs(limit: Int, offset: Int): JobSubList
   job(id: ID!): Job
   company(id: ID!): Company
 }
@@ -13,6 +13,11 @@ type Mutation {
   createJob(input: CreateJobInput!): Job
   updateJob(input: UpdateJobInput!): Job
   deleteJob(id: ID!): Job
+}
+
+type JobSubList {
+  items: [Job!]!
+  totalCount: Int!
 }
 
 type Company {
