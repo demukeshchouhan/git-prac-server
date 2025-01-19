@@ -1,83 +1,126 @@
-import { connection } from '../db/connection.js';
+import { connection } from "../db/connection.js";
 
 const { schema } = connection;
 
-await schema.dropTableIfExists('user');
-await schema.dropTableIfExists('job');
-await schema.dropTableIfExists('company');
+await schema.dropTableIfExists("user");
+await schema.dropTableIfExists("job");
+await schema.dropTableIfExists("company");
+await schema.dropTableIfExists("message");
+await schema.dropTableIfExists("login");
 
-await schema.createTable('company', (table) => {
-  table.text('id').notNullable().primary();
-  table.text('name').notNullable();
-  table.text('description');
+await schema.createTable("company", (table) => {
+  table.text("id").notNullable().primary();
+  table.text("name").notNullable();
+  table.text("description");
 });
 
-await schema.createTable('job', (table) => {
-  table.text('id').notNullable().primary();
-  table.text('companyId').notNullable()
-    .references('id').inTable('company');
-  table.text('title').notNullable();
-  table.text('description');
-  table.text('createdAt').notNullable();
+await schema.createTable("job", (table) => {
+  table.text("id").notNullable().primary();
+  table.text("companyId").notNullable().references("id").inTable("company");
+  table.text("title").notNullable();
+  table.text("description");
+  table.text("createdAt").notNullable();
 });
 
-await schema.createTable('user', (table) => {
-  table.text('id').notNullable().primary();
-  table.text('companyId').notNullable()
-    .references('id').inTable('company');
-  table.text('email').notNullable().unique();
-  table.text('password').notNullable();
+await schema.createTable("user", (table) => {
+  table.text("id").notNullable().primary();
+  table.text("companyId").notNullable().references("id").inTable("company");
+  table.text("username").notNullable().unique();
+  table.text("email").notNullable().unique();
+  table.text("password").notNullable();
 });
 
-await connection.table('company').insert([
+await connection.table("company").insert([
   {
-    id: 'FjcJCHJALA4i',
-    name: 'Facegle',
-    description: 'We are a startup on a mission to disrupt social search engines. Think Facebook meet Google.',
+    id: "FjcJCHJALA4i",
+    name: "Facegle",
+    description:
+      "We are a startup on a mission to disrupt social search engines. Think Facebook meet Google.",
   },
   {
-    id: 'Gu7QW9LcnF5d',
-    name: 'Goobook',
-    description: 'We are a startup on a mission to disrupt search social media. Think Google meet Facebook.',
+    id: "Gu7QW9LcnF5d",
+    name: "Goobook",
+    description:
+      "We are a startup on a mission to disrupt search social media. Think Google meet Facebook.",
   },
 ]);
 
-await connection.table('job').insert([
+await connection.table("job").insert([
   {
-    id: 'f3YzmnBZpK0o',
-    companyId: 'FjcJCHJALA4i',
-    title: 'Frontend Developer',
-    description: 'We are looking for a Frontend Developer familiar with React.',
-    createdAt: '2024-01-26T11:00:00.000Z',
+    id: "f3YzmnBZpK0o",
+    companyId: "FjcJCHJALA4i",
+    title: "Frontend Developer",
+    description: "We are looking for a Frontend Developer familiar with React.",
+    createdAt: "2024-01-26T11:00:00.000Z",
   },
   {
-    id: 'XYZNJMXFax6n',
-    companyId: 'FjcJCHJALA4i',
-    title: 'Backend Developer',
-    description: 'We are looking for a Backend Developer familiar with Node.js and Express.',
-    createdAt: '2024-01-27T11:00:00.000Z',
+    id: "XYZNJMXFax6n",
+    companyId: "FjcJCHJALA4i",
+    title: "Backend Developer",
+    description:
+      "We are looking for a Backend Developer familiar with Node.js and Express.",
+    createdAt: "2024-01-27T11:00:00.000Z",
   },
   {
-    id: '6mA05AZxvS1R',
-    companyId: 'Gu7QW9LcnF5d',
-    title: 'Full-Stack Developer',
-    description: 'We are looking for a Full-Stack Developer familiar with Node.js, Express, and React.',
-    createdAt: '2024-01-30T11:00:00.000Z',
+    id: "6mA05AZxvS1R",
+    companyId: "Gu7QW9LcnF5d",
+    title: "Full-Stack Developer",
+    description:
+      "We are looking for a Full-Stack Developer familiar with Node.js, Express, and React.",
+    createdAt: "2024-01-30T11:00:00.000Z",
   },
 ]);
 
-await connection.table('user').insert([
+await connection.table("user").insert([
   {
-    id: 'AcMJpL7b413Z',
-    companyId: 'FjcJCHJALA4i',
-    email: 'alice@facegle.io',
-    password: 'alice123',
+    id: "AcMJpL7b413Z",
+    companyId: "FjcJCHJALA4i",
+    email: "alice@facegle.io",
+    username: "alice",
+    password: "alice123",
   },
   {
-    id: 'BvBNW636Z89L',
-    companyId: 'Gu7QW9LcnF5d',
-    email: 'bob@goobook.co',
-    password: 'bob123',
+    id: "BvBNW636Z89L",
+    companyId: "Gu7QW9LcnF5d",
+    email: "bob@goobook.co",
+    username: "bob",
+    password: "bob123",
+  },
+]);
+
+await connection.schema.createTable("login", (table) => {
+  table.text("username").notNullable().primary();
+  table.text("password").notNullable();
+});
+
+await connection.schema.createTable("message", (table) => {
+  table.text("id").notNullable().primary();
+  table.text("user").notNullable();
+  table.text("text").notNullable();
+  table.text("createdAt").notNullable();
+});
+
+await connection.table("message").insert([
+  {
+    id: "m00000000001",
+    user: "system",
+    text: "Welcome to the GraphQL chat!",
+    createdAt: "2023-01-31T11:00:00.000Z",
+  },
+]);
+
+await connection.table("login").insert([
+  {
+    username: "alice",
+    password: "alice123",
+  },
+  {
+    username: "bob",
+    password: "bob123",
+  },
+  {
+    username: "charlie",
+    password: "charlie123",
   },
 ]);
 

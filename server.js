@@ -3,32 +3,61 @@ import cors from "cors";
 import { ApolloServer } from "@apollo/server";
 import { expressMiddleware as apolloMiddleware } from "@apollo/server/express4";
 import { readFile } from "node:fs/promises";
-import { authMiddleware, handleLogin } from "./auth.js";
+import { createServer as createHttpServer } from "node:http";
+import { WebSocketServer } from "ws";
+import { useServer as useWsServer } from "graphql-ws/use/ws";
+import { makeExecutableSchema } from "@graphql-tools/schema";
+
+import { authMiddleware, decodeToken, handleLogin } from "./auth.js";
 import { resolvers } from "./resolvers.js";
-import { getUser } from "./db/users.js";
+import { getUserByName } from "./db/users.js";
 import { createCompanyLoader } from "./db/companies.js";
 
 async function getContext({ req }) {
   const companyLoader = createCompanyLoader();
   const context = { companyLoader };
   if (req.auth) {
-    context.user = await getUser(req.auth.sub);
+    const user = await getUserByName(req.auth.sub);
+    console.log({ user }, "context");
+    context.user = user;
   }
   return context;
+}
+
+function getWsContext({ connectionParams }) {
+  const accessToken = connectionParams?.accessToken;
+  if (accessToken) {
+    const payload = decodeToken(accessToken);
+    return { user: payload.sub };
+  }
+  return {};
 }
 
 const PORT = 9000;
 const app = express();
 
-app.use(cors(), express.json(), authMiddleware);
+app.use(cors(), express.json());
 app.post("/login", handleLogin);
 
 const typeDefs = await readFile("./schema.graphql", "utf8");
+const schema = makeExecutableSchema({ typeDefs, resolvers });
 
-const apolloServer = new ApolloServer({ typeDefs, resolvers });
+const apolloServer = new ApolloServer({ schema });
 await apolloServer.start();
-app.use("/graphql", apolloMiddleware(apolloServer, { context: getContext }));
+app.use(
+  "/graphql",
+  authMiddleware,
+  apolloMiddleware(apolloServer, { context: getContext })
+);
 
-app.listen({ port: PORT }, () => {
-  console.log(`Server running on port ${PORT}`);
+const httpServer = createHttpServer(app);
+const wsServer = new WebSocketServer({
+  server: httpServer,
+  path: "/graphql",
+});
+useWsServer({ schema, context: getWsContext }, wsServer);
+
+httpServer.listen({ port: PORT }, () => {
+  console.log(`Server ready at http://localhost:${PORT}/graphql`);
+  console.log(`WebSocket ready at ws://localhost:${PORT}/graphql`);
 });

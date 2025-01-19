@@ -1,4 +1,5 @@
 import { GraphQLError } from "graphql";
+import { PubSub } from "graphql-subscriptions";
 import {
   getJobs,
   getJob,
@@ -9,10 +10,16 @@ import {
   jobsCount,
 } from "./db/jobs.js";
 import { getCompany } from "./db/companies.js";
+import { createMessage, getMessages } from "./db/messages.js";
+
+const pubSub = new PubSub();
 
 export const resolvers = {
   Query: {
-    jobs: async (_root, { limit, offset }) => {
+    jobs: async (_root, { limit, offset }, { user }) => {
+      if (!user) {
+        throw unauthorizedError("Missing authorization");
+      }
       const items = await getJobs(limit, offset);
       const totalCount = jobsCount();
       return { items, totalCount };
@@ -30,6 +37,11 @@ export const resolvers = {
         return notFoundError(`No company found for this id ${id}`);
       }
       return company;
+    },
+    messages: (_root, _args, { user }) => {
+      console.log({ user });
+      if (!user) throw unauthorizedError();
+      return getMessages();
     },
   },
   Mutation: {
@@ -64,6 +76,21 @@ export const resolvers = {
         throw notFoundError(`No company found for this id ${id}`);
       }
       return job;
+    },
+    addMessage: async (_root, { text }, { user }) => {
+      console.log({ user });
+      if (!user) throw unauthorizedError();
+      const message = await createMessage(user.username, text);
+      pubSub.publish("MESSAGE_ADDED", { messageAdded: message });
+      return message;
+    },
+  },
+  Subscription: {
+    messageAdded: {
+      subscribe: (_root, _args, { user }) => {
+        if (!user) throw unauthorizedError();
+        return pubSub.asyncIterableIterator("MESSAGE_ADDED");
+      },
     },
   },
   Job: {

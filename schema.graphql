@@ -6,13 +6,25 @@ type Query {
   jobs(limit: Int, offset: Int): JobSubList
   job(id: ID!): Job
   company(id: ID!): Company
+  messages: [Message!]
 }
 
 type Mutation {
-  login(email: String!, password: String!): String
+  login(username: String!, password: String!): String
   createJob(input: CreateJobInput!): Job
   updateJob(input: UpdateJobInput!): Job
   deleteJob(id: ID!): Job
+  addMessage(text: String!): Message
+}
+
+type Subscription {
+  messageAdded: Message
+}
+
+type Message {
+  id: ID!
+  user: String!
+  text: String!
 }
 
 type JobSubList {
