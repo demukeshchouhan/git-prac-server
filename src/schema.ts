@@ -1,3 +1,4 @@
+const typedefs = `#graphql
 #regular comment
 """
 This is a documentation comment
@@ -57,3 +58,6 @@ input UpdateJobInput {
   title: String!
   description: String
 }
+`;
+
+export default typedefs;

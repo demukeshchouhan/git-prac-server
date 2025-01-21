@@ -2,23 +2,31 @@ import express from "express";
 import cors from "cors";
 import { ApolloServer } from "@apollo/server";
 import { expressMiddleware as apolloMiddleware } from "@apollo/server/express4";
-import { readFile } from "node:fs/promises";
 import { createServer as createHttpServer } from "node:http";
 import { WebSocketServer } from "ws";
 import { useServer as useWsServer } from "graphql-ws/use/ws";
 import { makeExecutableSchema } from "@graphql-tools/schema";
 
+import typeDefs from "./schema.js";
 import { authMiddleware, decodeToken, handleLogin } from "./auth.js";
 import { resolvers } from "./resolvers.js";
-import { getUserByName } from "./db/users.js";
-import { createCompanyLoader } from "./db/companies.js";
+import { getUser } from "../db/users.js";
+import { createCompanyLoader } from "../db/companies.js";
 
 async function getContext({ req }) {
   const companyLoader = createCompanyLoader();
-  const context = { companyLoader };
+  const context: {
+    companyLoader: ReturnType<typeof createCompanyLoader>;
+    user?: {
+      id: string;
+      companyId: string;
+      email: string;
+      password: string;
+      username: string;
+    };
+  } = { companyLoader };
   if (req.auth) {
-    const user = await getUserByName(req.auth.sub);
-    console.log({ user }, "context");
+    const user = await getUser(req.auth.sub);
     context.user = user;
   }
   return context;
@@ -39,7 +47,7 @@ const app = express();
 app.use(cors(), express.json());
 app.post("/login", handleLogin);
 
-const typeDefs = await readFile("./schema.graphql", "utf8");
+// const typeDefs = readFileSync("./schema.graphql", "utf8");
 const schema = makeExecutableSchema({ typeDefs, resolvers });
 
 const apolloServer = new ApolloServer({ schema });

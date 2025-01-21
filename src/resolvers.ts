@@ -8,20 +8,21 @@ import {
   deleteJob,
   updateJob,
   jobsCount,
-} from "./db/jobs.js";
-import { getCompany } from "./db/companies.js";
-import { createMessage, getMessages } from "./db/messages.js";
+} from "../db/jobs.js";
+import { getCompany } from "../db/companies.js";
+import { createMessage, getMessages } from "../db/messages.js";
+import { Resolvers } from "../src/generated/schema.js";
 
 const pubSub = new PubSub();
 
-export const resolvers = {
+export const resolvers: Resolvers = {
   Query: {
     jobs: async (_root, { limit, offset }, { user }) => {
       if (!user) {
         throw unauthorizedError("Missing authorization");
       }
       const items = await getJobs(limit, offset);
-      const totalCount = jobsCount();
+      const totalCount = await jobsCount();
       return { items, totalCount };
     },
     job: async (_job, { id }) => {
@@ -39,8 +40,7 @@ export const resolvers = {
       return company;
     },
     messages: (_root, _args, { user }) => {
-      console.log({ user });
-      if (!user) throw unauthorizedError();
+      if (!user) throw unauthorizedError("Missing authorization");
       return getMessages();
     },
   },
@@ -49,7 +49,7 @@ export const resolvers = {
       if (!user) {
         throw unauthorizedError("Missing authorization");
       }
-      const { companyId } = user;
+      const { companyId } = user ?? {};
       const job = createJob({ companyId, title, description });
       return job;
     },
@@ -66,11 +66,12 @@ export const resolvers = {
     updateJob: async (
       _root,
       { input: { id, title, description } },
-      { user: { companyId } }
+      { user }
     ) => {
       if (!user) {
         throw unauthorizedError("Missing authorization");
       }
+      const { companyId } = user;
       const job = await updateJob({ id, companyId, title, description });
       if (!job) {
         throw notFoundError(`No company found for this id ${id}`);
@@ -78,8 +79,7 @@ export const resolvers = {
       return job;
     },
     addMessage: async (_root, { text }, { user }) => {
-      console.log({ user });
-      if (!user) throw unauthorizedError();
+      if (!user) throw unauthorizedError("Missing authorization");
       const message = await createMessage(user.username, text);
       pubSub.publish("MESSAGE_ADDED", { messageAdded: message });
       return message;
@@ -88,7 +88,7 @@ export const resolvers = {
   Subscription: {
     messageAdded: {
       subscribe: (_root, _args, { user }) => {
-        if (!user) throw unauthorizedError();
+        if (!user) throw unauthorizedError("Missing authorization");
         return pubSub.asyncIterableIterator("MESSAGE_ADDED");
       },
     },
@@ -109,12 +109,12 @@ function toISODate(value) {
 
 function notFoundError(message) {
   return new GraphQLError(message, {
-    extension: { code: "NOT_FOUND" },
+    extensions: { code: "NOT_FOUND" },
   });
 }
 
 function unauthorizedError(message) {
   return new GraphQLError(message, {
-    extension: { code: "UNAUTHORIZED" },
+    extensions: { code: "UNAUTHORIZED" },
   });
 }
