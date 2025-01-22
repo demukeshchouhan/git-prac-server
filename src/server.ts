@@ -6,14 +6,20 @@ import { createServer as createHttpServer } from "node:http";
 import { WebSocketServer } from "ws";
 import { useServer as useWsServer } from "graphql-ws/use/ws";
 import { makeExecutableSchema } from "@graphql-tools/schema";
+import { loadDocumentsSync, loadSchemaSync } from "@graphql-tools/load";
+import { GraphQLFileLoader } from "@graphql-tools/graphql-file-loader";
 
-import typeDefs from "./schema.js";
 import { authMiddleware, decodeToken, handleLogin } from "./auth.js";
-import { resolvers } from "./resolvers.js";
+import { ResolverContext, resolvers } from "./resolvers.js";
 import { getUser } from "../db/users.js";
 import { createCompanyLoader } from "../db/companies.js";
+import path from "node:path";
 
-async function getContext({ req }) {
+const typeDefs = loadSchemaSync(path.resolve(path.dirname("./**/*.graphql")), {
+  loaders: [new GraphQLFileLoader()],
+});
+
+async function getContext({ req }): Promise<ResolverContext> {
   const companyLoader = createCompanyLoader();
   const context: {
     companyLoader: ReturnType<typeof createCompanyLoader>;

@@ -9,11 +9,22 @@ import {
   updateJob,
   jobsCount,
 } from "../db/jobs.js";
-import { getCompany } from "../db/companies.js";
+import { createCompanyLoader, getCompany } from "../db/companies.js";
 import { createMessage, getMessages } from "../db/messages.js";
 import { Resolvers } from "../src/generated/schema.js";
 
 const pubSub = new PubSub();
+
+export interface ResolverContext {
+  user?: {
+    id: string;
+    companyId: string;
+    email: string;
+    password: string;
+    username: string;
+  };
+  companyLoader: ReturnType<typeof createCompanyLoader>;
+}
 
 export const resolvers: Resolvers = {
   Query: {
